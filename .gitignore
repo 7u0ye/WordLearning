@@ -31,9 +31,3 @@ build/
 
 ### VS Code ###
 .vscode/
-
-# 确保以下文件不会被提交
-application-dev.yml
-application-prod.yml
-**/application-*.yml
-!application-template.yml  # 可以提交模板文件
