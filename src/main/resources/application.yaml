@@ -19,7 +19,7 @@ spring:
 mybatis-plus:
   # 如果你还有 XML 文件就放开下面这行
   # mapper-locations: classpath:mapper/*.xml
-  type-aliases-package: com.example.word.entity
+  type-aliases-package: com.qinyuan.wordlearning.entity
   configuration:
     # 驼峰转下划线（数据库 user_name → Java userName），默认就是 true
     map-underscore-to-camel-case: true
@@ -29,3 +29,6 @@ mybatis-plus:
     db-config:
       # 主键自增策略
       id-type: auto
+jwt:
+  secret: word-memorize-secret-key-2025-long-enough-key
+  expire: 7*24*60*60
