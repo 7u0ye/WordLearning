@@ -31,4 +31,4 @@ mybatis-plus:
       id-type: auto
 jwt:
   secret: word-memorize-secret-key-2025-long-enough-key
-  expire: 7*24*60*60
+  expire: 604800000
