@@ -17,8 +17,7 @@ spring:
       host: localhost
 
 mybatis-plus:
-  # 如果你还有 XML 文件就放开下面这行
-  # mapper-locations: classpath:mapper/*.xml
+  mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.qinyuan.wordlearning.entity
   configuration:
     # 驼峰转下划线（数据库 user_name → Java userName），默认就是 true

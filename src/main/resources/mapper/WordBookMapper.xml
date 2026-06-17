@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.qinyuan.wordlearning.mapper.WordBookMapper">
+    <select id="selectWordsWithStatus" resultType="com.qinyuan.wordlearning.dto.WordWithStatusDTO">
+        select w.id, w.english, w.chinese,
+               coalesce(uw.status, 0) AS status,
+               coalesce(uw.forget_count, 0) AS forgetCount
+        from word w
+                 left join user_word uw on w.id = uw.word_id and uw.user_id = #{userId}
+        where w.book_id = #{bookId}
+    </select>
+</mapper>
