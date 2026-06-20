@@ -861,6 +861,118 @@ input[type="range"] {
   }
 }
 
+/* ── 每日打卡 ─────────────────────────────────────── */
+
+.checkin-section {
+  padding: 20px;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.checkin-stats {
+  display: flex;
+  gap: 36px;
+  margin-bottom: 18px;
+}
+
+.checkin-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.checkin-stat strong {
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+}
+
+.checkin-stat span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+/* LeetCode 风格热力图：列 = 周，行 = 星期几 */
+
+.checkin-calendar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.checkin-graph-header {
+  display: flex;
+  gap: 3px;
+  padding-left: 21px;
+}
+
+.checkin-graph-month {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.checkin-graph-body {
+  display: flex;
+  gap: 3px;
+}
+
+.checkin-row-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 18px;
+}
+
+.checkin-row-labels span {
+  display: grid;
+  place-items: center;
+  width: 13px;
+  height: 13px;
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.checkin-columns {
+  display: flex;
+  gap: 3px;
+}
+
+.checkin-column {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.checkin-cell {
+  width: 13px;
+  height: 13px;
+  border-radius: 2px;
+  background: #ebedf2;
+  cursor: default;
+  transition: background 0.15s ease;
+}
+
+.checkin-cell.checked {
+  background: var(--green);
+  box-shadow: 0 1px 3px rgba(57, 197, 122, 0.25);
+}
+
+.checkin-cell.today {
+  outline: 1.5px solid var(--cyan);
+  outline-offset: 1px;
+}
+
+.checkin-cell.empty {
+  background: transparent;
+}
+
+/* ─────────────────────────────────────────────────── */
+
 @media (max-width: 620px) {
   h1 {
     font-size: 34px;
@@ -886,5 +998,24 @@ input[type="range"] {
 
   .nav-tab span:last-child {
     display: none;
+  }
+
+  .checkin-stats {
+    gap: 20px;
+  }
+
+  .checkin-stat strong {
+    font-size: 24px;
+  }
+
+  .checkin-cell {
+    width: 11px;
+    height: 11px;
+  }
+
+  .checkin-row-labels span {
+    width: 11px;
+    height: 11px;
+    font-size: 9px;
   }
 }

@@ -9,7 +9,13 @@ const state = {
   studyLocked: false,
   studyAdvanceTimer: null,
   exam: null,
-  timerId: null
+  timerId: null,
+  checkin: {
+    checkedToday: false,
+    checkedDays: [],
+    consecutiveDays: 0,
+    totalCheckinsThisMonth: 0
+  }
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -48,7 +54,11 @@ const dom = {
   examResult: $("#examResult"),
   refreshRecordsBtn: $("#refreshRecordsBtn"),
   recordList: $("#recordList"),
-  toast: $("#toast")
+  toast: $("#toast"),
+  checkinBtn: $("#checkinBtn"),
+  consecutiveDays: $("#consecutiveDays"),
+  monthlyDays: $("#monthlyDays"),
+  checkinCalendar: $("#checkinCalendar")
 };
 
 function showToast(message) {
@@ -164,7 +174,7 @@ async function handleAuth(event) {
 
 async function bootAuthedApp() {
   setAuthenticated(true);
-  await Promise.all([loadUser(), loadBooks(), loadRecords()]);
+  await Promise.all([loadUser(), loadBooks(), loadRecords(), loadCheckinStatus()]);
 }
 
 async function loadUser() {
@@ -635,7 +645,142 @@ function bindEvents() {
   dom.resumeExamBtn.addEventListener("click", resumeExam);
   dom.submitExamBtn.addEventListener("click", submitExam);
   dom.refreshRecordsBtn.addEventListener("click", loadRecords);
+  dom.checkinBtn.addEventListener("click", doCheckin);
 }
+
+// ── 每日打卡 ──────────────────────────────────────────
+
+async function loadCheckinStatus() {
+  if (!state.token) return;
+  try {
+    const data = await api("/api/checkin/status");
+    state.checkin = data;
+    renderCheckin();
+  } catch (error) {
+    // 打卡功能非核心，静默失败
+  }
+}
+
+async function doCheckin() {
+  setBusy(dom.checkinBtn, true, "打卡中");
+  try {
+    await api("/api/checkin", { method: "POST" });
+    await loadCheckinStatus();
+    showToast("打卡成功！");
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    setBusy(dom.checkinBtn, false);
+  }
+}
+
+function renderCheckin() {
+  const { checkedToday, checkedDays, consecutiveDays, totalCheckinsThisMonth } = state.checkin;
+
+  // 更新统计数字
+  dom.consecutiveDays.textContent = consecutiveDays;
+  dom.monthlyDays.textContent = totalCheckinsThisMonth;
+
+  // 更新按钮状态
+  if (checkedToday) {
+    dom.checkinBtn.textContent = "已打卡 ✓";
+    dom.checkinBtn.disabled = true;
+    dom.checkinBtn.style.opacity = "0.65";
+  } else {
+    dom.checkinBtn.textContent = "今日打卡";
+    dom.checkinBtn.disabled = false;
+    dom.checkinBtn.style.opacity = "1";
+  }
+
+  // 渲染日历
+  renderCalendar(checkedDays || []);
+}
+
+// LeetCode 风格热力图：列 = 周，行 = 星期几（一 ~ 日）
+function renderCalendar(checkedDays) {
+  var now = new Date();
+  var year = now.getFullYear();
+  var month = now.getMonth();       // 0-based
+  var today = now.getDate();
+
+  var firstDayOfWeek = new Date(year, month, 1).getDay(); // 0=Sun
+  var daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  // 周一为第 0 行，周日为第 6 行
+  var startRow = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
+  var numCols = Math.ceil((startRow + daysInMonth) / 7);
+  var checkedSet = new Set(checkedDays || []);
+
+  // 行标签
+  var rowLabels = ["一", "二", "三", "四", "五", "六", "日"];
+
+  // 构建 7 行 × N 列的网格数据
+  var grid = [];
+  for (var r = 0; r < 7; r++) {
+    grid[r] = [];
+    for (var c = 0; c < numCols; c++) {
+      grid[r][c] = -1; // -1 = 空格子
+    }
+  }
+
+  var day = 1;
+  for (var c = 0; c < numCols; c++) {
+    var startR = (c === 0) ? startRow : 0;
+    for (var r = startR; r < 7 && day <= daysInMonth; r++) {
+      grid[r][c] = day;
+      day++;
+    }
+  }
+
+  // 组装 HTML
+  var monthNames = ["1月", "2月", "3月", "4月", "5月", "6月",
+                    "7月", "8月", "9月", "10月", "11月", "12月"];
+
+  var html = "";
+  // 顶部月份标签（放在第一列上方）
+  html += '<div class="checkin-graph-header">';
+  html += '<span class="checkin-graph-month">' + monthNames[month] + "</span>";
+  html += "</div>";
+
+  // 主体：左行标签 + 右列
+  html += '<div class="checkin-graph-body">';
+
+  // 左侧行标签
+  html += '<div class="checkin-row-labels">';
+  for (var r2 = 0; r2 < 7; r2++) {
+    html += "<span>" + rowLabels[r2] + "</span>";
+  }
+  html += "</div>";
+
+  // 右侧列
+  html += '<div class="checkin-columns">';
+  for (var c2 = 0; c2 < numCols; c2++) {
+    html += '<div class="checkin-column">';
+    for (var r3 = 0; r3 < 7; r3++) {
+      var dayNum = grid[r3][c2];
+      if (dayNum === -1) {
+        html += '<div class="checkin-cell empty"></div>';
+      } else {
+        var cls = "checkin-cell";
+        if (checkedSet.has(dayNum)) {
+          cls += " checked";
+        }
+        if (dayNum === today) {
+          cls += " today";
+        }
+        var title = (month + 1) + "月" + dayNum + "日";
+        html += '<div class="' + cls + '" title="' + title + '"></div>';
+      }
+    }
+    html += "</div>";
+  }
+  html += "</div>"; // .checkin-columns
+  html += "</div>"; // .checkin-graph-body
+
+  dom.checkinCalendar.innerHTML = html;
+}
+
+// ─────────────────────────────────────────────────────
 
 async function init() {
   bindEvents();
