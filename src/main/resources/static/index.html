@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WordLearning</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <section class="auth-screen" id="authPanel" aria-label="账号">
+    <div class="auth-panel">
+      <div class="auth-copy">
+        <div class="auth-brand">
+          <span class="brand-mark">WL</span>
+          <strong>WordLearning</strong>
+        </div>
+        <p class="eyebrow">SIGN IN</p>
+        <h2>登录后开始学习</h2>
+        <p>界面会自动读取你的词书、学习进度和测验记录。</p>
+        <div class="auth-tags" aria-hidden="true">
+          <span>单词练习</span>
+          <span>快速测验</span>
+          <span>学习记录</span>
+        </div>
+      </div>
+      <form class="auth-form" id="authForm">
+        <div class="mode-switch" role="group" aria-label="登录或注册">
+          <button class="mode-btn active" data-auth-mode="login" type="button">登录</button>
+          <button class="mode-btn" data-auth-mode="register" type="button">注册</button>
+        </div>
+        <label>
+          <span>用户名</span>
+          <input id="usernameInput" autocomplete="username" required>
+        </label>
+        <label>
+          <span>密码</span>
+          <input id="passwordInput" type="password" autocomplete="current-password" required>
+        </label>
+        <label id="emailField" hidden>
+          <span>邮箱</span>
+          <input id="emailInput" type="email" autocomplete="email">
+        </label>
+        <button class="primary-button" id="authSubmit" type="submit">登录</button>
+        <p class="form-message" id="authMessage"></p>
+      </form>
+    </div>
+  </section>
+
+  <div class="app-shell" id="appShell" hidden>
+    <aside class="side-panel">
+      <div class="brand">
+        <span class="brand-mark">WL</span>
+        <div>
+          <strong>WordLearning</strong>
+          <span>word channel</span>
+        </div>
+      </div>
+
+      <nav class="nav-tabs" aria-label="主导航">
+        <button class="nav-tab active" data-view="studyView" type="button">
+          <span class="nav-icon">学</span>
+          <span>学习</span>
+        </button>
+        <button class="nav-tab" data-view="examView" type="button">
+          <span class="nav-icon">测</span>
+          <span>测验</span>
+        </button>
+        <button class="nav-tab" data-view="recordsView" type="button">
+          <span class="nav-icon">录</span>
+          <span>记录</span>
+        </button>
+      </nav>
+
+      <div class="poster">
+        <img src="./assets/livehouse-study.svg" alt="livehouse study illustration">
+        <div class="poster-copy">
+          <span>today's set</span>
+          <strong>20 words</strong>
+        </div>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">VOCABULARY STUDIO</p>
+          <h1>把今天的单词练稳一点</h1>
+        </div>
+        <div class="top-search" aria-hidden="true">
+          <span>搜索词书 / 复习记录</span>
+          <kbd>Ctrl K</kbd>
+        </div>
+        <div class="user-area">
+          <span class="session-pill" id="sessionName">未登录</span>
+          <button class="ghost-button" id="logoutBtn" type="button" hidden>退出</button>
+        </div>
+      </header>
+
+      <section class="dashboard" id="dashboard" hidden>
+        <div class="toolbar">
+          <label class="select-field">
+            <span>词书</span>
+            <select id="bookSelect"></select>
+          </label>
+          <label class="step-field">
+            <span>数量</span>
+            <input id="studyCount" type="number" min="1" max="80" value="20">
+          </label>
+          <button class="primary-button" id="loadStudyBtn" type="button">开始学习</button>
+        </div>
+
+        <section class="view active" id="studyView">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">STUDY</p>
+              <h2>练习队列</h2>
+            </div>
+            <button class="ghost-button" id="saveStatusBtn" type="button" hidden>跳过本题</button>
+          </div>
+          <div class="word-grid" id="wordGrid"></div>
+        </section>
+
+        <section class="view" id="examView">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">EXAM</p>
+              <h2>快速测验</h2>
+            </div>
+            <button class="ghost-button" id="resumeExamBtn" type="button">恢复进行中</button>
+          </div>
+
+          <div class="exam-setup" id="examSetup">
+            <label>
+              <span>题目数</span>
+              <input id="examCount" type="number" min="4" max="100" value="20">
+            </label>
+            <label>
+              <span>中文选英文比例</span>
+              <input id="examRatio" type="range" min="0" max="100" step="10" value="50">
+              <b id="ratioText">50%</b>
+            </label>
+            <label>
+              <span>时长</span>
+              <input id="examMinutes" type="number" min="1" max="180" value="20">
+            </label>
+            <button class="primary-button" id="startExamBtn" type="button">生成试卷</button>
+          </div>
+
+          <div class="exam-board" id="examBoard" hidden>
+            <div class="exam-meta">
+              <strong id="examTitle">测验中</strong>
+              <span id="examTimer">--:--</span>
+            </div>
+            <div id="questionList" class="question-list"></div>
+            <button class="primary-button" id="submitExamBtn" type="button">提交测验</button>
+          </div>
+
+          <div class="result-panel" id="examResult" hidden></div>
+        </section>
+
+        <section class="view" id="recordsView">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">RECORDS</p>
+              <h2>测验记录</h2>
+            </div>
+            <button class="ghost-button" id="refreshRecordsBtn" type="button">刷新</button>
+          </div>
+          <div class="record-list" id="recordList"></div>
+        </section>
+      </section>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </main>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
