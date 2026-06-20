@@ -1,6 +1,7 @@
 package com.qinyuan.wordlearning.service.impl;
 
 import com.qinyuan.wordlearning.common.BaseContext;
+import com.qinyuan.wordlearning.common.OptionGenerator;
 import com.qinyuan.wordlearning.common.Result;
 import com.qinyuan.wordlearning.dto.ExamQuestionDTO;
 import com.qinyuan.wordlearning.dto.ExamStartDTO;
@@ -35,29 +36,6 @@ public class ExamServiceImpl implements ExamService {
     @Autowired
     private ExamDetailMapper examDetailMapper;
 
-    private List<String> generateOptions(Word correctWord,String type,List<Word> allWords){
-        String correct = type.equals("cnToEn")?correctWord.getEnglish():correctWord.getChinese();
-
-        //从同一本书中随机选3个不同的错误答案
-        List<String> wrongs = new ArrayList<>();
-        List<Word> others = new ArrayList<>(allWords);
-        others.removeIf(word -> word.getId().equals(correctWord.getId()));
-        Collections.shuffle(others);
-
-        for(Word w:others){
-            String wrong = type.equals("cnToEn")?w.getEnglish():w.getChinese();
-            if(!wrong.equals(correct)&& wrongs.size()<3){
-                wrongs.add(wrong);
-            }
-        }
-
-        List<String> options = new ArrayList<>();
-        options.add(correct);
-        options.addAll(wrongs);
-        Collections.shuffle(options);//打乱顺序，防止正确答案出现在固定位置
-        return options;
-    }
-
     //组装考试结果
     private Result buildExamResult(ExamRecord examRecord) {
         List<ExamDetail> details = examDetailMapper.selectByExamId(examRecord.getId());
@@ -80,7 +58,7 @@ public class ExamServiceImpl implements ExamService {
             questionItem.setQuestion(examDetail.getQuestionType().equals("cnToEn")
                     ? word.getChinese() : word.getEnglish());
             // 重新生成 4 个选项
-            questionItem.setOptions(generateOptions(word, examDetail.getQuestionType(), allWords));
+            questionItem.setOptions(OptionGenerator.generate(word, examDetail.getQuestionType(), allWords));
             questionItem.setUserAnswer(examDetail.getUserAnswer());
             questions.add(questionItem);
         }
@@ -145,7 +123,7 @@ public class ExamServiceImpl implements ExamService {
             String type = types.get(i);
 
             //生成四个选项（1正确+3干扰）
-            List<String> options = generateOptions(word, type, allWords);
+            List<String> options = OptionGenerator.generate(word, type, allWords);
 
             //存入exam_detail,正确答案不返回前端
             ExamDetail detail = new ExamDetail();
@@ -184,24 +162,30 @@ public class ExamServiceImpl implements ExamService {
         }
         //查出所有题目
         List<ExamDetail> details = examDetailMapper.selectByExamId(examId);
-        Map<Long,ExamDetail> detailMap = new HashMap<>();
-        for(ExamDetail d : details){
-            detailMap.put(d.getId(),d);
+        Map<Long, ExamDetail> detailMap = new HashMap<>();
+        for (ExamDetail d : details) {
+            detailMap.put(d.getId(), d);
         }
 
-        //逐题判分
+        // 逐题判分（只改内存对象，不逐条更新）
         int correct = 0;
-        for(ExamSubmitDTO.AnswerItem answer:examSubmitDTO.getAnswers()){
+        for (ExamSubmitDTO.AnswerItem answer : examSubmitDTO.getAnswers()) {
             ExamDetail examDetail = detailMap.get(answer.getDetailId());
-            if(examDetail == null){continue;}
+            if (examDetail == null) { continue; }
             examDetail.setUserAnswer(answer.getAnswer());
-            if(answer.getAnswer()!=null && answer.getAnswer().trim().equalsIgnoreCase(examDetail.getCorrectAnswer().trim())){
+            if (answer.getAnswer() != null &&
+                    answer.getAnswer().trim().equalsIgnoreCase(examDetail.getCorrectAnswer().trim())) {
                 examDetail.setIsCorrect(1);
                 correct++;
-            }else {
+            } else {
                 examDetail.setIsCorrect(0);
             }
-            examDetailMapper.updateById(examDetail);
+            // 不再逐条 updateById，collect 起来一起更新
+        }
+
+        // 一条 SQL 批量更新所有 exam_detail
+        if (!details.isEmpty()) {
+            examDetailMapper.batchUpdateAnswers(details);
         }
 
         //更新考试记录

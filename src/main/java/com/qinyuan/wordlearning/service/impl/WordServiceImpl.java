@@ -1,6 +1,7 @@
 package com.qinyuan.wordlearning.service.impl;
 
 import com.qinyuan.wordlearning.common.BaseContext;
+import com.qinyuan.wordlearning.common.OptionGenerator;
 import com.qinyuan.wordlearning.common.Result;
 import com.qinyuan.wordlearning.dto.BatchStatusDTO;
 import com.qinyuan.wordlearning.dto.StudyWordDTO;
@@ -28,27 +29,6 @@ public class WordServiceImpl implements WordService {
     @Autowired
     private WordBookMapper wordBookMapper;
 
-    private List<String> generateOptions(Word correctWord, String type, List<Word> allWords) {
-        String correct = type.equals("cnToEn") ? correctWord.getEnglish() : correctWord.getChinese();
-
-        List<String> wrongs = new ArrayList<>();
-        List<Word> others = new ArrayList<>(allWords);
-        others.removeIf(w -> w.getId().equals(correctWord.getId()));
-        Collections.shuffle(others);
-
-        for (Word w : others) {
-            String wrong = type.equals("cnToEn") ? w.getEnglish() : w.getChinese();
-            if (!wrong.equals(correct) && wrongs.size() < 3) {
-                wrongs.add(wrong);
-            }
-        }
-
-        List<String> options = new ArrayList<>();
-        options.add(correct);
-        options.addAll(wrongs);
-        Collections.shuffle(options);
-        return options;
-    }
 
     @Override
     @Transactional
@@ -103,7 +83,7 @@ public class WordServiceImpl implements WordService {
             dto.setWordId(word.getId());
             dto.setQuestionType(type);
             dto.setQuestion(type.equals("cnToEn") ? word.getChinese() : word.getEnglish());
-            dto.setOptions(generateOptions(word, type, allWords));
+            dto.setOptions(OptionGenerator.generate(word, type, allWords));
             dto.setCorrectAnswer(type.equals("cnToEn") ? word.getEnglish() : word.getChinese());
             result.add(dto);
         }
@@ -119,9 +99,26 @@ public class WordServiceImpl implements WordService {
             return Result.success();
         }
 
+        // 1. 先收集所有需要判分的 wordId
+        List<Long> wordIds = batchStatusDTO.getUpdates().stream()
+                .filter(item -> item.getAnswer() != null && !item.getAnswer().isEmpty())
+                .map(BatchStatusDTO.UpdateItem::getWordId)
+                .distinct()  // 去重，万一同一单词出现了两次
+                .toList();
+
+        // 2. 一次性批量查出所有 word，放进 Map
+        Map<Long, Word> wordMap = new HashMap<>();
+        if (!wordIds.isEmpty()) {
+            List<Word> words = wordMapper.selectBatchIds(wordIds);  // ← 1 条 SQL，IN 查询
+            for (Word w : words) {
+                wordMap.put(w.getId(), w);
+            }
+        }
+
+        // 3. 循环里从 Map 取，不再查库
         for (BatchStatusDTO.UpdateItem item : batchStatusDTO.getUpdates()) {
             if (item.getAnswer() != null && !item.getAnswer().isEmpty()) {
-                Word word = wordMapper.selectById(item.getWordId());
+                Word word = wordMap.get(item.getWordId());  // ← 内存操作，O(1)
                 if (word != null) {
                     boolean correct = item.getAnswer().trim().equalsIgnoreCase(word.getEnglish().trim())
                             || item.getAnswer().trim().equalsIgnoreCase(word.getChinese().trim());

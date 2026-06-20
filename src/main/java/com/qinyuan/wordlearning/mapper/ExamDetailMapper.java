@@ -13,4 +13,5 @@ public interface ExamDetailMapper extends BaseMapper<ExamDetail> {
     //根据考试id查询单词
     List<ExamDetail> selectByExamId(@Param("examId") Long examId);
 
+    int batchUpdateAnswers(@Param("details") List<ExamDetail> details);
 }

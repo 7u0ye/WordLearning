@@ -52,4 +52,10 @@ public class LoginInterceptor implements HandlerInterceptor {
             return false;
         }
     }
+
+    @Override
+    public void afterCompletion(jakarta.servlet.http.HttpServletRequest request, jakarta.servlet.http.HttpServletResponse response, Object handler, Exception ex) {
+        // 请求结束后清理 ThreadLocal，避免线程复用时的数据污染
+        BaseContext.removeCurrentId();
+    }
 }

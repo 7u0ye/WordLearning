@@ -1,6 +1,25 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.qinyuan.wordlearning.mapper.ExamDetailMapper">
+    <update id="batchUpdateAnswers">
+            UPDATE exam_detail
+            SET user_answer = CASE id
+            <foreach collection="details" item="d">
+                WHEN #{d.id} THEN #{d.userAnswer}
+            </foreach>
+            END,
+            is_correct = CASE id
+            <foreach collection="details" item="d">
+                WHEN #{d.id} THEN #{d.isCorrect}
+            </foreach>
+            END
+            WHERE id IN
+            <foreach collection="details" item="d" open="(" close=")" separator=",">
+                #{d.id}
+            </foreach>
+    </update>
+
+
     <select id="selectByExamId" resultType="com.qinyuan.wordlearning.entity.ExamDetail">
         select * from exam_detail where exam_id=#{examId}
     </select>
