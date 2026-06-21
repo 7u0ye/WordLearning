@@ -14,7 +14,8 @@ const state = {
     checkedToday: false,
     checkedDays: [],
     consecutiveDays: 0,
-    totalCheckinsThisMonth: 0
+    totalCheckinsThisMonth: 0,
+    checkedDates: []
   }
 };
 
@@ -112,10 +113,14 @@ function setAuthenticated(isAuthenticated) {
 
 function clearSession() {
   state.token = "";
+  state.userName = "";
   localStorage.removeItem("wordLearningToken");
   setAuthenticated(false);
   dom.wordGrid.innerHTML = "";
   dom.recordList.innerHTML = "";
+  dom.checkinCalendar.innerHTML = "";
+  dom.consecutiveDays.textContent = "--";
+  dom.monthlyDays.textContent = "--";
   stopStudyAdvance();
   stopTimer();
 }
@@ -174,12 +179,14 @@ async function handleAuth(event) {
 
 async function bootAuthedApp() {
   setAuthenticated(true);
-  await Promise.all([loadUser(), loadBooks(), loadRecords(), loadCheckinStatus()]);
+  await loadUser();
+  await Promise.all([loadBooks(), loadRecords(), loadCheckinStatus()]);
 }
 
 async function loadUser() {
   try {
     const user = await api("/api/user/info");
+    state.userName = user.username || "";
     dom.sessionName.textContent = user.username || "已登录";
   } catch (error) {
     clearSession();
@@ -419,11 +426,41 @@ function stopStudyAdvance() {
   }
 }
 
+function getCheckinHistoryKey() {
+  return `wordLearningCheckinHistory:${state.userName || "default"}`;
+}
+
+function readCheckinHistory() {
+  try {
+    const raw = localStorage.getItem(getCheckinHistoryKey());
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function writeCheckinHistory(dates) {
+  localStorage.setItem(getCheckinHistoryKey(), JSON.stringify(Array.from(new Set(dates)).sort()));
+}
+
+function dateKey(year, month, day) {
+  const mm = String(month + 1).padStart(2, "0");
+  const dd = String(day).padStart(2, "0");
+  return `${year}-${mm}-${dd}`;
+}
+
+function formatMonthLabel(date) {
+  return `${date.getMonth() + 1}月`;
+}
+
 function switchView(viewId) {
   $$(".nav-tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.view === viewId));
   $$(".view").forEach((view) => view.classList.toggle("active", view.id === viewId));
   if (viewId === "recordsView") {
     loadRecords();
+  } else if (viewId === "homeView") {
+    loadCheckinStatus();
   }
 }
 
@@ -636,6 +673,10 @@ function bindEvents() {
     button.addEventListener("click", () => switchView(button.dataset.view));
   });
 
+  $$(".home-entry").forEach((button) => {
+    button.addEventListener("click", () => switchView(button.dataset.viewTarget));
+  });
+
   dom.authForm.addEventListener("submit", handleAuth);
   dom.logoutBtn.addEventListener("click", clearSession);
   dom.loadStudyBtn.addEventListener("click", loadStudyWords);
@@ -654,7 +695,17 @@ async function loadCheckinStatus() {
   if (!state.token) return;
   try {
     const data = await api("/api/checkin/status");
-    state.checkin = data;
+    const today = new Date();
+    const monthDates = (data.checkedDays || []).map((day) =>
+      dateKey(today.getFullYear(), today.getMonth(), day)
+    );
+    const mergedDates = Array.from(new Set([...readCheckinHistory(), ...monthDates])).sort();
+    state.checkin = {
+      ...state.checkin,
+      ...data,
+      checkedDates: mergedDates
+    };
+    writeCheckinHistory(mergedDates);
     renderCheckin();
   } catch (error) {
     // 打卡功能非核心，静默失败
@@ -665,12 +716,18 @@ async function doCheckin() {
   setBusy(dom.checkinBtn, true, "打卡中");
   try {
     await api("/api/checkin", { method: "POST" });
+    const today = new Date();
+    const key = dateKey(today.getFullYear(), today.getMonth(), today.getDate());
+    const mergedDates = Array.from(new Set([...readCheckinHistory(), key])).sort();
+    writeCheckinHistory(mergedDates);
     await loadCheckinStatus();
     showToast("打卡成功！");
   } catch (error) {
     showToast(error.message);
   } finally {
-    setBusy(dom.checkinBtn, false);
+    if (!state.checkin.checkedToday) {
+      setBusy(dom.checkinBtn, false);
+    }
   }
 }
 
@@ -692,90 +749,57 @@ function renderCheckin() {
     dom.checkinBtn.style.opacity = "1";
   }
 
-  // 渲染日历
-  renderCalendar(checkedDays || []);
+  // 渲染年度热力图
+  renderCalendar(state.checkin.checkedDates || []);
 }
 
-// LeetCode 风格热力图：列 = 周，行 = 星期几（一 ~ 日）
-function renderCalendar(checkedDays) {
-  var now = new Date();
-  var year = now.getFullYear();
-  var month = now.getMonth();       // 0-based
-  var today = now.getDate();
+function renderCalendar(checkedDates) {
+  const checkedSet = new Set((checkedDates || []).map((item) => String(item)));
+  const today = new Date();
+  const months = [];
 
-  var firstDayOfWeek = new Date(year, month, 1).getDay(); // 0=Sun
-  var daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  // 周一为第 0 行，周日为第 6 行
-  var startRow = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
-  var numCols = Math.ceil((startRow + daysInMonth) / 7);
-  var checkedSet = new Set(checkedDays || []);
-
-  // 行标签
-  var rowLabels = ["一", "二", "三", "四", "五", "六", "日"];
-
-  // 构建 7 行 × N 列的网格数据
-  var grid = [];
-  for (var r = 0; r < 7; r++) {
-    grid[r] = [];
-    for (var c = 0; c < numCols; c++) {
-      grid[r][c] = -1; // -1 = 空格子
-    }
+  for (let offset = 11; offset >= 0; offset -= 1) {
+    months.push(new Date(today.getFullYear(), today.getMonth() - offset, 1));
   }
 
-  var day = 1;
-  for (var c = 0; c < numCols; c++) {
-    var startR = (c === 0) ? startRow : 0;
-    for (var r = startR; r < 7 && day <= daysInMonth; r++) {
-      grid[r][c] = day;
-      day++;
-    }
-  }
+  const html = `
+    <div class="checkin-year-strip">
+      ${months.map((monthDate) => {
+        const year = monthDate.getFullYear();
+        const month = monthDate.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
+        const cells = [];
 
-  // 组装 HTML
-  var monthNames = ["1月", "2月", "3月", "4月", "5月", "6月",
-                    "7月", "8月", "9月", "10月", "11月", "12月"];
+        for (let slot = 0; slot < 42; slot += 1) {
+          const day = slot - firstWeekday + 1;
+          if (day < 1 || day > daysInMonth) {
+            cells.push('<span class="checkin-cell empty"></span>');
+            continue;
+          }
 
-  var html = "";
-  // 顶部月份标签（放在第一列上方）
-  html += '<div class="checkin-graph-header">';
-  html += '<span class="checkin-graph-month">' + monthNames[month] + "</span>";
-  html += "</div>";
+          const key = dateKey(year, month, day);
+          const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
+          const classes = [
+            "checkin-cell",
+            checkedSet.has(key) ? "checked" : "idle",
+            isToday ? "today" : ""
+          ].filter(Boolean).join(" ");
 
-  // 主体：左行标签 + 右列
-  html += '<div class="checkin-graph-body">';
-
-  // 左侧行标签
-  html += '<div class="checkin-row-labels">';
-  for (var r2 = 0; r2 < 7; r2++) {
-    html += "<span>" + rowLabels[r2] + "</span>";
-  }
-  html += "</div>";
-
-  // 右侧列
-  html += '<div class="checkin-columns">';
-  for (var c2 = 0; c2 < numCols; c2++) {
-    html += '<div class="checkin-column">';
-    for (var r3 = 0; r3 < 7; r3++) {
-      var dayNum = grid[r3][c2];
-      if (dayNum === -1) {
-        html += '<div class="checkin-cell empty"></div>';
-      } else {
-        var cls = "checkin-cell";
-        if (checkedSet.has(dayNum)) {
-          cls += " checked";
+          cells.push(`<span class="${classes}" title="${month + 1}月${day}日"></span>`);
         }
-        if (dayNum === today) {
-          cls += " today";
-        }
-        var title = (month + 1) + "月" + dayNum + "日";
-        html += '<div class="' + cls + '" title="' + title + '"></div>';
-      }
-    }
-    html += "</div>";
-  }
-  html += "</div>"; // .checkin-columns
-  html += "</div>"; // .checkin-graph-body
+
+        return `
+          <div class="checkin-month">
+            <div class="checkin-month-grid">
+              ${cells.join("")}
+            </div>
+            <div class="checkin-month-label">${formatMonthLabel(monthDate)}</div>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
 
   dom.checkinCalendar.innerHTML = html;
 }

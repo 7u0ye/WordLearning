@@ -826,6 +826,78 @@ input[type="range"] {
   transform: translateY(0);
 }
 
+.home-entrance-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.home-entry {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  min-height: 156px;
+  padding: 20px;
+  overflow: hidden;
+  color: var(--ink);
+  text-align: left;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 30px rgba(24, 25, 28, 0.06);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.home-entry::after {
+  content: "";
+  position: absolute;
+  right: -28px;
+  bottom: -34px;
+  width: 132px;
+  height: 132px;
+  background: radial-gradient(circle, rgba(0, 174, 236, 0.16), transparent 68%);
+}
+
+.home-entry:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 174, 236, 0.32);
+  box-shadow: 0 18px 38px rgba(0, 174, 236, 0.13);
+}
+
+.home-entry-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  color: #fff;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--cyan), var(--pink));
+  border-radius: var(--radius);
+}
+
+.home-entry strong {
+  position: relative;
+  z-index: 1;
+  font-size: 24px;
+}
+
+.home-entry small {
+  position: relative;
+  z-index: 1;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.exam-entry .home-entry-icon {
+  background: linear-gradient(135deg, #7c5cff, var(--cyan));
+}
+
+.record-entry .home-entry-icon {
+  background: linear-gradient(135deg, var(--green), var(--cyan));
+}
+
 @media (max-width: 920px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -859,6 +931,10 @@ input[type="range"] {
   .topbar {
     display: grid;
   }
+
+  .home-entrance-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ── 每日打卡 ─────────────────────────────────────── */
@@ -868,7 +944,7 @@ input[type="range"] {
   background: var(--panel-strong);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  box-shadow: 0 12px 30px rgba(24, 25, 28, 0.06);
 }
 
 .checkin-stats {
@@ -895,80 +971,67 @@ input[type="range"] {
   font-weight: 650;
 }
 
-/* LeetCode 风格热力图：列 = 周，行 = 星期几 */
-
 .checkin-calendar {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  overflow-x: auto;
+  padding: 6px 2px 2px;
 }
 
-.checkin-graph-header {
-  display: flex;
-  gap: 3px;
-  padding-left: 21px;
-}
-
-.checkin-graph-month {
-  font-size: 12px;
-  color: var(--muted);
-  font-weight: 700;
-}
-
-.checkin-graph-body {
-  display: flex;
-  gap: 3px;
-}
-
-.checkin-row-labels {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  width: 18px;
-}
-
-.checkin-row-labels span {
+.checkin-year-strip {
   display: grid;
-  place-items: center;
-  width: 13px;
-  height: 13px;
-  font-size: 10px;
-  color: var(--muted);
-  font-weight: 600;
+  grid-template-columns: repeat(12, 64px);
+  gap: 16px;
+  min-width: max-content;
 }
 
-.checkin-columns {
-  display: flex;
-  gap: 3px;
-}
-
-.checkin-column {
+.checkin-month {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkin-month-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 8px);
+  grid-template-rows: repeat(7, 8px);
+  grid-auto-flow: column;
+  gap: 5px;
 }
 
 .checkin-cell {
-  width: 13px;
-  height: 13px;
-  border-radius: 2px;
-  background: #ebedf2;
+  width: 8px;
+  height: 8px;
+  border: 1px solid #eef1f4;
+  border-radius: 3px;
+  background: #fff;
   cursor: default;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.checkin-cell.idle {
+  background: #fff;
 }
 
 .checkin-cell.checked {
-  background: var(--green);
-  box-shadow: 0 1px 3px rgba(57, 197, 122, 0.25);
+  background: #2ec866;
+  border-color: #2ec866;
+  box-shadow: 0 1px 5px rgba(46, 200, 102, 0.28);
 }
 
 .checkin-cell.today {
-  outline: 1.5px solid var(--cyan);
-  outline-offset: 1px;
+  outline: 1px solid var(--cyan);
+  outline-offset: 2px;
 }
 
 .checkin-cell.empty {
   background: transparent;
+  border-color: transparent;
+}
+
+.checkin-month-label {
+  color: #9aa0aa;
+  font-size: 13px;
+  line-height: 1;
 }
 
 /* ─────────────────────────────────────────────────── */
@@ -1008,14 +1071,20 @@ input[type="range"] {
     font-size: 24px;
   }
 
-  .checkin-cell {
-    width: 11px;
-    height: 11px;
+  .checkin-year-strip {
+    grid-template-columns: repeat(12, 56px);
+    gap: 12px;
   }
 
-  .checkin-row-labels span {
-    width: 11px;
-    height: 11px;
-    font-size: 9px;
+  .checkin-month-grid {
+    grid-template-columns: repeat(6, 7px);
+    grid-template-rows: repeat(7, 7px);
+    gap: 4px;
+  }
+
+  .checkin-cell {
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
   }
 }

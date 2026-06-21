@@ -57,7 +57,11 @@
       </div>
 
       <nav class="nav-tabs" aria-label="主导航">
-        <button class="nav-tab active" data-view="studyView" type="button">
+        <button class="nav-tab active" data-view="homeView" type="button">
+          <span class="nav-icon">首</span>
+          <span>首页</span>
+        </button>
+        <button class="nav-tab" data-view="studyView" type="button">
           <span class="nav-icon">学</span>
           <span>学习</span>
         </button>
@@ -97,19 +101,60 @@
       </header>
 
       <section class="dashboard" id="dashboard" hidden>
-        <div class="toolbar">
-          <label class="select-field">
-            <span>词书</span>
-            <select id="bookSelect"></select>
-          </label>
-          <label class="step-field">
-            <span>数量</span>
-            <input id="studyCount" type="number" min="1" max="80" value="20">
-          </label>
-          <button class="primary-button" id="loadStudyBtn" type="button">开始学习</button>
-        </div>
+        <section class="view active" id="homeView">
+          <div class="home-entrance-grid">
+            <button class="home-entry study-entry" data-view-target="studyView" type="button">
+              <span class="home-entry-icon">学</span>
+              <strong>开始学习</strong>
+              <small>单题练习，选择后即时反馈</small>
+            </button>
+            <button class="home-entry exam-entry" data-view-target="examView" type="button">
+              <span class="home-entry-icon">测</span>
+              <strong>快速测验</strong>
+              <small>生成试卷，检查掌握情况</small>
+            </button>
+            <button class="home-entry record-entry" data-view-target="recordsView" type="button">
+              <span class="home-entry-icon">录</span>
+              <strong>学习记录</strong>
+              <small>查看历史分数与答题表现</small>
+            </button>
+          </div>
 
-        <section class="view active" id="studyView">
+          <section class="checkin-section">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">CHECKIN</p>
+                <h2>打卡记录</h2>
+              </div>
+              <button class="primary-button" id="checkinBtn" type="button">今日打卡</button>
+            </div>
+            <div class="checkin-stats">
+              <div class="checkin-stat">
+                <strong id="consecutiveDays">--</strong>
+                <span>连续打卡</span>
+              </div>
+              <div class="checkin-stat">
+                <strong id="monthlyDays">--</strong>
+                <span>本月累计</span>
+              </div>
+            </div>
+            <div class="checkin-calendar" id="checkinCalendar"></div>
+          </section>
+        </section>
+
+        <section class="view" id="studyView">
+          <div class="toolbar">
+            <label class="select-field">
+              <span>词书</span>
+              <select id="bookSelect"></select>
+            </label>
+            <label class="step-field">
+              <span>数量</span>
+              <input id="studyCount" type="number" min="1" max="80" value="20">
+            </label>
+            <button class="primary-button" id="loadStudyBtn" type="button">开始学习</button>
+          </div>
+
           <div class="section-heading">
             <div>
               <p class="eyebrow">STUDY</p>
@@ -167,30 +212,6 @@
             <button class="ghost-button" id="refreshRecordsBtn" type="button">刷新</button>
           </div>
           <div class="record-list" id="recordList"></div>
-        </section>
-
-        <!-- 每日打卡 -->
-        <section class="checkin-section">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">CHECKIN</p>
-              <h2>每日打卡</h2>
-            </div>
-            <button class="primary-button" id="checkinBtn" type="button">今日打卡</button>
-          </div>
-          <div class="checkin-stats">
-            <div class="checkin-stat">
-              <strong id="consecutiveDays">--</strong>
-              <span>连续打卡</span>
-            </div>
-            <div class="checkin-stat">
-              <strong id="monthlyDays">--</strong>
-              <span>本月累计</span>
-            </div>
-          </div>
-          <div class="checkin-calendar" id="checkinCalendar">
-            <!-- JS 动态渲染 -->
-          </div>
         </section>
       </section>
 
